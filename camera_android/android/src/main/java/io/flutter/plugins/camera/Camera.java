@@ -21,10 +21,9 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
+import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
-import android.os.Build;
-import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -280,7 +279,7 @@ class Camera
     // TODO(camsim99): Revert changes that allow legacy code to be used when recordingProfile is null
     // once this has largely been fixed on the Android side. https://github.com/flutter/flutter/issues/119668
     EncoderProfiles recordingProfile = getRecordingProfile();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && recordingProfile != null) {
+    if (SdkCapabilityChecker.supportsEncoderProfiles() && recordingProfile != null) {
       mediaRecorderBuilder =
           new MediaRecorderBuilder(
               recordingProfile, outputFilePath, getFps(), getVideoBitrate(), getAudioBitrate());
@@ -444,8 +443,14 @@ class Camera
 
     List<Surface> remainingSurfaces = Arrays.asList(surfaces);
     if (templateType != CameraDevice.TEMPLATE_PREVIEW) {
-      // If it is not preview mode, add all surfaces as targets.
+      // If it is not preview mode, add all surfaces as targets
+      // except the surface used for still capture as this should
+      // not be part of a repeating request.
+      Surface pictureImageReaderSurface = pictureImageReader.getSurface();
       for (Surface surface : remainingSurfaces) {
+        if (surface == pictureImageReaderSurface) {
+          continue;
+        }
         previewRequestBuilder.addTarget(surface);
       }
     }
@@ -492,7 +497,7 @@ class Camera
         };
 
     // Start the session.
-    if (VERSION.SDK_INT >= VERSION_CODES.P) {
+    if (SdkCapabilityChecker.supportsSessionConfiguration()) {
       // Collect all surfaces to render to.
       List<OutputConfiguration> configs = new ArrayList<>();
       configs.add(new OutputConfiguration(flutterSurface));
@@ -568,6 +573,10 @@ class Camera
     if (stream && imageStreamReader != null) {
       surfaces.add(imageStreamReader.getSurface());
     }
+
+    // Add pictureImageReader surface to allow for still capture
+    // during recording/image streaming.
+    surfaces.add(pictureImageReader.getSurface());
 
     createCaptureSession(
         CameraDevice.TEMPLATE_RECORD, successCallback, surfaces.toArray(new Surface[0]));
@@ -689,7 +698,6 @@ class Camera
         };
 
     try {
-      captureSession.stopRepeating();
       Log.i(TAG, "sending capture request");
       captureSession.capture(stillBuilder.build(), captureCallback, backgroundHandler);
     } catch (CameraAccessException e) {
@@ -841,7 +849,7 @@ class Camera
     }
 
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      if (SdkCapabilityChecker.supportsVideoPause()) {
         mediaRecorder.pause();
       } else {
         result.error("videoRecordingFailed", "pauseVideoRecording requires Android API +24.", null);
@@ -862,7 +870,7 @@ class Camera
     }
 
     try {
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+      if (SdkCapabilityChecker.supportsVideoPause()) {
         mediaRecorder.resume();
       } else {
         result.error(
@@ -1048,16 +1056,19 @@ class Camera
     return cameraFeatures.getResolution().getRecordingProfile();
   }
 
-  int getFps() {
-    return cameraFeatures.getFps().getValue();
+  Integer getFps() {
+    IntFeature fpsFeature = cameraFeatures.getFps();
+    return fpsFeature == null ? null : fpsFeature.getValue();
   }
 
-  int getVideoBitrate() {
-    return cameraFeatures.getVideoBitrate().getValue();
+  Integer getVideoBitrate() {
+    IntFeature videoBitrateFeature = cameraFeatures.getVideoBitrate();
+    return videoBitrateFeature == null ? null : videoBitrateFeature.getValue();
   }
 
-  int getAudioBitrate() {
-    return cameraFeatures.getAudioBitrate().getValue();
+  Integer getAudioBitrate() {
+    IntFeature audioBitrateFeature = cameraFeatures.getAudioBitrate();
+    return audioBitrateFeature == null ? null : audioBitrateFeature.getValue();
   }
 
   /** Shortut to get deviceOrientationListener. */
@@ -1187,10 +1198,15 @@ class Camera
   public void onImageAvailable(ImageReader reader) {
     Log.i(TAG, "onImageAvailable");
 
+    // Use acquireNextImage since image reader is only for one image.
+    Image image = reader.acquireNextImage();
+    if (image == null) {
+      return;
+    }
+
     backgroundHandler.post(
         new ImageSaver(
-            // Use acquireNextImage since image reader is only for one image.
-            reader.acquireNextImage(),
+            image,
             captureFile,
             new ImageSaver.Callback() {
               @Override
@@ -1206,7 +1222,8 @@ class Camera
     cameraCaptureCallback.setCameraState(CameraState.STATE_PREVIEW);
   }
 
-  private void prepareRecording(@NonNull Result result) {
+  @VisibleForTesting
+  void prepareRecording(@NonNull Result result) {
     final File outputDir = applicationContext.getCacheDir();
     try {
       captureFile = File.createTempFile("REC", ".mp4", outputDir);
@@ -1329,8 +1346,8 @@ class Camera
       return;
     }
 
-    // See VideoRenderer.java requires API 26 to switch camera while recording
-    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) {
+    // See VideoRenderer.java; support for this EGL extension is required to switch camera while recording.
+    if (!SdkCapabilityChecker.supportsEglRecordableAndroid()) {
       result.error(
           "setDescriptionWhileRecordingFailed",
           "Device does not support switching the camera while recording",

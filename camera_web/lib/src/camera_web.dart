@@ -96,15 +96,11 @@ class CameraPlugin extends CameraPlatform {
         );
       }
 
-      // Request video and audio permissions.
+      // Request video permissions only.
       final html.MediaStream cameraStream =
-          await _cameraService.getMediaStreamForOptions(
-        const CameraOptions(
-          audio: AudioConstraints(enabled: true),
-        ),
-      );
+          await _cameraService.getMediaStreamForOptions(const CameraOptions());
 
-      // Release the camera stream used to request video and audio permissions.
+      // Release the camera stream used to request video permissions.
       cameraStream
           .getVideoTracks()
           .forEach((html.MediaStreamTrack videoTrack) => videoTrack.stop());
@@ -229,11 +225,8 @@ class CameraPlugin extends CameraPlatform {
         textureId: textureId,
         cameraService: _cameraService,
         options: CameraOptions(
-          audio: AudioConstraints(
-              enabled: mediaSettings?.enableAudio ?? true,
-              bitrate: mediaSettings?.audioBitrate),
+          audio: AudioConstraints(enabled: mediaSettings?.enableAudio ?? true),
           video: VideoConstraints(
-            bitrate: mediaSettings?.videoBitrate,
             facingMode:
                 cameraType != null ? FacingModeConstraint(cameraType) : null,
             width: VideoSizeConstraint(
@@ -244,6 +237,10 @@ class CameraPlugin extends CameraPlatform {
             ),
             deviceId: cameraMetadata.deviceId,
           ),
+        ),
+        recorderOptions: (
+          audioBitrate: mediaSettings?.audioBitrate,
+          videoBitrate: mediaSettings?.videoBitrate,
         ),
       );
 
