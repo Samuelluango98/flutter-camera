@@ -7,6 +7,7 @@ package io.flutter.plugins.camera;
 import android.annotation.TargetApi;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.os.Build;
@@ -29,6 +30,12 @@ interface CameraDeviceWrapper {
       @NonNull CameraCaptureSession.StateCallback callback,
       @Nullable Handler handler)
       throws CameraAccessException;
+
+  void createConstrainedHighSpeedCaptureSession(
+          @NonNull List<Surface> outputs,
+          @NonNull CameraConstrainedHighSpeedCaptureSession.StateCallback callback,
+          @Nullable Handler handler)
+          throws CameraAccessException;
 
   void close();
 }

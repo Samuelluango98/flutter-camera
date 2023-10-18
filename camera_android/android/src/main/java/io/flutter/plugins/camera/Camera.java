@@ -12,6 +12,7 @@ import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
@@ -24,6 +25,7 @@ import android.media.EncoderProfiles;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -180,6 +182,12 @@ class Camera
         @Nullable Handler handler)
         throws CameraAccessException {
       cameraDevice.createCaptureSession(outputs, callback, backgroundHandler);
+    }
+    @Override
+    public void createConstrainedHighSpeedCaptureSession(@NonNull List<Surface> outputs, @NonNull CameraConstrainedHighSpeedCaptureSession.StateCallback callback, @Nullable Handler handler) throws CameraAccessException {
+      if (Build.VERSION.SDK_INT >= VERSION_CODES.M) {
+        cameraDevice.createConstrainedHighSpeedCaptureSession(outputs,callback, backgroundHandler);
+      }
     }
 
     @Override
@@ -520,7 +528,7 @@ class Camera
       throws CameraAccessException {
     cameraDevice.createCaptureSession(
         new SessionConfiguration(
-            SessionConfiguration.SESSION_REGULAR,
+            SessionConfiguration.SESSION_HIGH_SPEED,
             outputConfigs,
             Executors.newSingleThreadExecutor(),
             callback));
