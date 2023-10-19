@@ -525,7 +525,6 @@ class Camera
             CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
     int sessionConfiguration =  SessionConfiguration.SESSION_REGULAR;
 
-
     for (int i = 0; i < capabilities.length ; i++) {
       int capability = capabilities[i];
       if (capability == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO ){
