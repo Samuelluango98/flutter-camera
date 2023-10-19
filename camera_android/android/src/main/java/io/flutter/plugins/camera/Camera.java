@@ -12,7 +12,7 @@ import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
@@ -183,13 +183,6 @@ class Camera
         throws CameraAccessException {
       cameraDevice.createCaptureSession(outputs, callback, backgroundHandler);
     }
-    @Override
-    public void createConstrainedHighSpeedCaptureSession(@NonNull List<Surface> outputs, @NonNull CameraConstrainedHighSpeedCaptureSession.StateCallback callback, @Nullable Handler handler) throws CameraAccessException {
-      if (Build.VERSION.SDK_INT >= VERSION_CODES.M) {
-        cameraDevice.createConstrainedHighSpeedCaptureSession(outputs,callback, backgroundHandler);
-      }
-    }
-
     @Override
     public void close() {
       cameraDevice.close();
@@ -526,9 +519,24 @@ class Camera
   private void createCaptureSessionWithSessionConfig(
       List<OutputConfiguration> outputConfigs, CameraCaptureSession.StateCallback callback)
       throws CameraAccessException {
+      CameraManager cameraManager = CameraUtils.getCameraManager(activity);
+    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraProperties.getCameraName());
+    int[] capabilities = characteristics.get(
+            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+    int sessionConfiguration =  SessionConfiguration.SESSION_REGULAR;
+
+
+    for (int i = 0; i < capabilities.length ; i++) {
+      int capability = capabilities[i];
+      if (capability == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO ){
+        sessionConfiguration = SessionConfiguration.SESSION_HIGH_SPEED;
+        break;
+      }
+    }
+
     cameraDevice.createCaptureSession(
         new SessionConfiguration(
-            SessionConfiguration.SESSION_HIGH_SPEED,
+            sessionConfiguration,
             outputConfigs,
             Executors.newSingleThreadExecutor(),
             callback));
