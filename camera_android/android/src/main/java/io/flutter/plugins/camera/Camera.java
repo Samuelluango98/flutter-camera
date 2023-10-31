@@ -519,19 +519,19 @@ class Camera
   private void createCaptureSessionWithSessionConfig(
       List<OutputConfiguration> outputConfigs, CameraCaptureSession.StateCallback callback)
       throws CameraAccessException {
-      CameraManager cameraManager = CameraUtils.getCameraManager(activity);
-    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraProperties.getCameraName());
-    int[] capabilities = characteristics.get(
-            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+    //   CameraManager cameraManager = CameraUtils.getCameraManager(activity);
+    // CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraProperties.getCameraName());
+    // int[] capabilities = characteristics.get(
+    //         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
     int sessionConfiguration =  SessionConfiguration.SESSION_REGULAR;
 
-    for (int i = 0; i < capabilities.length ; i++) {
-      int capability = capabilities[i];
-      if (capability == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO){
-        sessionConfiguration = SessionConfiguration.SESSION_HIGH_SPEED;
-        break;
-      }
-    }
+    // for (int i = 0; i < capabilities.length ; i++) {
+    //   int capability = capabilities[i];
+    //   if (capability == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO){
+    //     sessionConfiguration = SessionConfiguration.SESSION_HIGH_SPEED;
+    //     break;
+    //   }
+    // }
 
     cameraDevice.createCaptureSession(
         new SessionConfiguration(
