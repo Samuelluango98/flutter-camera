@@ -12,7 +12,6 @@ import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
@@ -25,7 +24,6 @@ import android.media.EncoderProfiles;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaRecorder;
-import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -183,6 +181,7 @@ class Camera
         throws CameraAccessException {
       cameraDevice.createCaptureSession(outputs, callback, backgroundHandler);
     }
+
     @Override
     public void close() {
       cameraDevice.close();
@@ -519,23 +518,9 @@ class Camera
   private void createCaptureSessionWithSessionConfig(
       List<OutputConfiguration> outputConfigs, CameraCaptureSession.StateCallback callback)
       throws CameraAccessException {
-    //   CameraManager cameraManager = CameraUtils.getCameraManager(activity);
-    // CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraProperties.getCameraName());
-    // int[] capabilities = characteristics.get(
-    //         CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
-    int sessionConfiguration =  SessionConfiguration.SESSION_REGULAR;
-
-    // for (int i = 0; i < capabilities.length ; i++) {
-    //   int capability = capabilities[i];
-    //   if (capability == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_CONSTRAINED_HIGH_SPEED_VIDEO){
-    //     sessionConfiguration = SessionConfiguration.SESSION_HIGH_SPEED;
-    //     break;
-    //   }
-    // }
-
     cameraDevice.createCaptureSession(
         new SessionConfiguration(
-                sessionConfiguration,
+            SessionConfiguration.SESSION_REGULAR,
             outputConfigs,
             Executors.newSingleThreadExecutor(),
             callback));

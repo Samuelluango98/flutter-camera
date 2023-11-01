@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 package io.flutter.plugins.camera;
+
 import android.annotation.TargetApi;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
